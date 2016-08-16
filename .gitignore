@@ -14,6 +14,7 @@ hs_err_pid*
 # Android Studio / IntelliJ IDEA
 *.iws
 .gradle
+/gradle
 /build
 /.idea
 *.iml
