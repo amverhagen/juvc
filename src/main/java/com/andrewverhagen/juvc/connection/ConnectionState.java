@@ -1,6 +1,6 @@
 package com.andrewverhagen.juvc.connection;
 
-enum ConnectionState {
+public enum ConnectionState {
 
     UNOPENED(0),
     CONNECTING(1),

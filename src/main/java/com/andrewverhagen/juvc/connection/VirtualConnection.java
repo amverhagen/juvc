@@ -55,6 +55,10 @@ public class VirtualConnection extends Observable {
         }
     }
 
+    public synchronized boolean containsAddress(VirtualConnection connectionToCheck) {
+        return this.containsAddress(connectionToCheck.connectionAddress);
+    }
+
     public synchronized boolean containsAddress(InetSocketAddress addressToCheck) {
         return AddressUtils.checkIfAddressesMatch(this.connectionAddress, addressToCheck);
     }
