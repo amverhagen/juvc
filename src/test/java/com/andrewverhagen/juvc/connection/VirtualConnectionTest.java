@@ -81,6 +81,12 @@ public class VirtualConnectionTest {
     }
 
     @Test
+    public void containsAddress_GivenCopyOfSameConnection_ReturnsTrue() {
+        VirtualConnection testConnection = new VirtualConnection(localHostSocketAddress, 1000, alwaysTrueInputHandler, defaultOutputSender);
+        assertTrue(testConnection.containsAddress(testConnection));
+    }
+
+    @Test
     public void containsAddress1() throws Exception {
         final VirtualConnection connection = new VirtualConnection(localHostSocketAddress, 1000, alwaysTrueInputHandler, defaultOutputSender);
         assertTrue(connection.containsAddress(localHostSocketAddress));

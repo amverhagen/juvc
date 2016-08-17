@@ -1,6 +1,7 @@
 package com.andrewverhagen.juvc.connector;
 
 import com.andrewverhagen.juvc.connection.VirtualConnection;
+import com.andrewverhagen.juvc.holder.ConnectionHolder;
 
 import java.net.DatagramSocket;
 import java.util.Vector;

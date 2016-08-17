@@ -48,11 +48,7 @@ public class VirtualConnection extends Observable {
     }
 
     public synchronized boolean containsAddress(SocketAddress addressToCheck) {
-        try {
-            return this.containsAddress((InetSocketAddress) addressToCheck);
-        } catch (ClassCastException e) {
-            return false;
-        }
+        return this.containsAddress((InetSocketAddress) addressToCheck);
     }
 
     public synchronized boolean containsAddress(VirtualConnection connectionToCheck) {
