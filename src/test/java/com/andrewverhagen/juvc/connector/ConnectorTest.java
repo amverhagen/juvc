@@ -4,6 +4,7 @@ import com.andrewverhagen.juvc.connection.ConnectionState;
 import com.andrewverhagen.juvc.connection.InputHandler;
 import com.andrewverhagen.juvc.connection.OutputSender;
 import com.andrewverhagen.juvc.connection.VirtualConnection;
+import com.andrewverhagen.juvc.holder.ConnectionHolder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -36,68 +37,43 @@ public class ConnectorTest {
     }
 
     @Test
-    public void startConnection_ConnectorWithMaxSizeOfOne_ThrowsExceptionWhenStartingMoreThanOneConnection() {
+    public void startConnection_StartConnectionThatConnectorDoesNotHave_ConnectionGoesIntoConnectingState() {
         Connector connector = new Connector(1);
-        boolean maxSizeExceptionThrown = false;
+        VirtualConnection testConnection = new VirtualConnection(localHost, 100, alwaysTrueHandler, defaultOutputSender);
+        ConnectionStateTester stateTester = new ConnectionStateTester();
+        testConnection.addObserver(stateTester);
+
         try {
-            this.addLocalHostConnectionToConnector(connector);
-        } catch (Connector.ConnectionAlreadyActiveException e) {
-            fail();
-        } catch (Connector.ConnectorIsFullException e) {
-            maxSizeExceptionThrown = true;
+            connector.startConnection(testConnection);
+        } catch (ConnectionHolder.AlreadyHoldingConnectionException e) {
+            fail("Connector should not already be holding connection.");
+        } catch (ConnectionHolder.HolderIsFullException e) {
+            fail("Connector should not be full");
         }
-        assertFalse(maxSizeExceptionThrown);
-        try {
-            this.addLocalHostConnectionToConnector(connector);
-        } catch (Connector.ConnectionAlreadyActiveException e) {
-            fail();
-        } catch (Connector.ConnectorIsFullException e) {
-            maxSizeExceptionThrown = true;
-        }
-        assertTrue(maxSizeExceptionThrown);
+
+        stateTester.testObserverIsInState(ConnectionState.CONNECTING);
     }
 
     @Test
-    public void startConnection_TwoConnectionsWithTheSameAddress_ThrowsConnectionAlreadyActiveException() {
+    public void startConnection_StartConnectionThatConnectorAlreadyHas_ShouldThrowAlreadyHoldingException() {
         Connector connector = new Connector(2);
-        boolean alreadyActiveExceptionThrown = false;
+        VirtualConnection testConnection = new VirtualConnection(localHost, 100, alwaysTrueHandler, defaultOutputSender);
         try {
-            this.addLocalHostConnectionToConnector(connector);
-        } catch (Connector.ConnectionAlreadyActiveException e) {
-            alreadyActiveExceptionThrown = true;
-        } catch (Connector.ConnectorIsFullException e) {
-            fail("Connector was full");
+            connector.startConnection(testConnection);
+        } catch (ConnectionHolder.AlreadyHoldingConnectionException e) {
+            fail("Connector should not already be holding connection.");
+        } catch (ConnectionHolder.HolderIsFullException e) {
+            fail("Connector should not be full");
         }
-        assertFalse(alreadyActiveExceptionThrown);
+        boolean alreadyHoldingThrown = false;
         try {
-            this.addLocalHostConnectionToConnector(connector);
-        } catch (Connector.ConnectionAlreadyActiveException e) {
-            alreadyActiveExceptionThrown = true;
-        } catch (Connector.ConnectorIsFullException e) {
-            fail("Connector was full");
+            connector.startConnection(testConnection);
+        } catch (ConnectionHolder.AlreadyHoldingConnectionException e) {
+            alreadyHoldingThrown = true;
+        } catch (ConnectionHolder.HolderIsFullException e) {
+            fail("Connector should not be full");
         }
-        assertTrue(alreadyActiveExceptionThrown);
-    }
-
-    @Test
-    public void startConnection_GivenUnopenedConnection_PutsConnectionIntoConnectingState() {
-        VirtualConnection unopenedConnection = new VirtualConnection(localHost, 2000, alwaysTrueHandler, defaultOutputSender);
-        ConnectionStateTester observerTester = new ConnectionStateTester();
-        unopenedConnection.addObserver(observerTester);
-        Connector connector = new Connector(2);
-        try {
-            connector.startConnection(unopenedConnection);
-        } catch (Connector.ConnectionAlreadyActiveException e) {
-            e.printStackTrace();
-        } catch (Connector.ConnectorIsFullException e) {
-            fail("Connector was full");
-        }
-        observerTester.testObserverIsInState(ConnectionState.CONNECTING);
-    }
-
-    private void addLocalHostConnectionToConnector(Connector connector) throws Connector.ConnectorIsFullException, Connector.ConnectionAlreadyActiveException {
-        VirtualConnection defaultConnection = new VirtualConnection(localHost, 2000, alwaysTrueHandler, defaultOutputSender);
-        connector.startConnection(defaultConnection);
+        assertTrue(alreadyHoldingThrown);
     }
 
     private class ConnectionStateTester implements Observer {

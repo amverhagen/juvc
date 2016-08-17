@@ -48,10 +48,10 @@ public class ConnectionHolder {
             virtualConnection.sendOutput();
     }
 
-    class AlreadyHoldingConnectionException extends Exception {
+    public class AlreadyHoldingConnectionException extends Exception {
     }
 
-    class HolderIsFullException extends Exception {
+    public class HolderIsFullException extends Exception {
 
     }
 }
