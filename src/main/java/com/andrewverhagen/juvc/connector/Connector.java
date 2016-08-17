@@ -5,16 +5,20 @@ import com.andrewverhagen.juvc.connection.VirtualConnection;
 import java.net.DatagramSocket;
 import java.util.Vector;
 
-public class Connector {
+class Connector {
 
     private final Vector<VirtualConnection> activeConnections;
+    private final int maxNumberOfConnections;
     private DatagramSocket communicationSocket;
 
-    public Connector() {
+    Connector(int maxNumberOfConnections) {
+        this.maxNumberOfConnections = maxNumberOfConnections;
         this.activeConnections = new Vector<>();
     }
 
-    public void startConnection(VirtualConnection connectionToStart) throws ConnectionAlreadyActiveException {
+    void startConnection(VirtualConnection connectionToStart) throws ConnectionAlreadyActiveException, ConnectorIsFullException {
+        if (this.connectorIsFull())
+            throw new ConnectorIsFullException();
         for (VirtualConnection activeConnection : activeConnections) {
             if (activeConnection.containsAddress(connectionToStart))
                 throw new ConnectionAlreadyActiveException();
@@ -27,6 +31,14 @@ public class Connector {
         connectionToAdd.sendOutput();
     }
 
-    public class ConnectionAlreadyActiveException extends Exception {
+    private boolean connectorIsFull() {
+        return activeConnections.size() >= this.maxNumberOfConnections;
+    }
+
+    class ConnectionAlreadyActiveException extends Exception {
+    }
+
+    class ConnectorIsFullException extends Exception {
+
     }
 }
