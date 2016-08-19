@@ -1,105 +1,88 @@
 package com.andrewverhagen.juvc.connection;
 
+import com.andrewverhagen.juvc.ConnectionStateTester;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
-import java.util.Observable;
-import java.util.Observer;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class VirtualConnectionTest {
 
     private static InetSocketAddress localHostSocketAddress;
-    private static InputHandler alwaysTrueInputHandler;
-    private static OutputSender defaultOutputSender;
-    private static DatagramPacket testPacket;
+    private static InputConsumer alwaysTrueInputConsumer;
+    private static OutputProvider defaultOutputProvider;
 
     @BeforeClass
     public static void initHandlers() {
-        alwaysTrueInputHandler = new InputHandler() {
+        alwaysTrueInputConsumer = new InputConsumer() {
             @Override
-            public boolean handleInput(byte[] incomingData) {
-                return true;
-            }
-        };
-        defaultOutputSender = new OutputSender() {
-            @Override
-            public void sendOutput() {
+            public void addInputData(byte[] inputData) {
 
             }
         };
+        defaultOutputProvider = new OutputProvider() {
+            @Override
+            public byte[] getOutputData() {
+                return new byte[0];
+            }
+        };
         localHostSocketAddress = new InetSocketAddress(9001);
-        testPacket = new DatagramPacket(new byte[0], 0);
     }
 
     @Test
     public void sendOutput_SendOutputWhileStateIsUnopened_ShouldChangeStateToConnecting() {
-        class ConnectingConnectionObserver implements Observer {
-            public boolean connectionWasSetToConnecting = false;
+        final VirtualConnection testConnection = new VirtualConnection(localHostSocketAddress, 2000, alwaysTrueInputConsumer, defaultOutputProvider);
+        final ConnectionStateTester connectionStateTester = new ConnectionStateTester();
 
-            @Override
-            public void update(Observable o, Object arg) {
-                try {
-                    ConnectionState newState = (ConnectionState) arg;
-                    if (newState == ConnectionState.CONNECTING)
-                        connectionWasSetToConnecting = true;
-                    else
-                        connectionWasSetToConnecting = false;
-                } catch (ClassCastException e) {
-                    connectionWasSetToConnecting = false;
-                }
-            }
-        }
-        ConnectingConnectionObserver connectionObserver = new ConnectingConnectionObserver();
-        final VirtualConnection testConnection = new VirtualConnection(localHostSocketAddress, 2000, alwaysTrueInputHandler, defaultOutputSender);
-        testConnection.addObserver(connectionObserver);
-        testConnection.sendOutput();
-        assertTrue(connectionObserver.connectionWasSetToConnecting);
-    }
+        testConnection.addObserver(connectionStateTester);
+        testConnection.openConnection();
 
-
-    @Test
-    public void handleInput() throws Exception {
-        testPacket.setSocketAddress(localHostSocketAddress);
-        final VirtualConnection connection = new VirtualConnection(localHostSocketAddress, 1000, alwaysTrueInputHandler, defaultOutputSender);
-        assertEquals(true, connection.handleInput(testPacket));
-
-        InetSocketAddress wrongPortAddress = new InetSocketAddress(9002);
-        testPacket.setSocketAddress(wrongPortAddress);
-        assertEquals(false, connection.handleInput(testPacket));
+        connectionStateTester.testObserverIsInState(ConnectionState.CONNECTING);
     }
 
     @Test
-    public void containsAddress() throws Exception {
-        testPacket.setSocketAddress(localHostSocketAddress);
-        final VirtualConnection connection = new VirtualConnection(localHostSocketAddress, 1000, alwaysTrueInputHandler, defaultOutputSender);
+    public void handleInput_GivenValidInputData_ShouldChangeConnectionToConnected() {
+        final VirtualConnection testConnection = new VirtualConnection(localHostSocketAddress, 1000, alwaysTrueInputConsumer, defaultOutputProvider);
+        final ConnectionStateTester connectionStateTester = new ConnectionStateTester();
+        final DatagramPacket inputPacket = new DatagramPacket(new byte[0], 0, localHostSocketAddress);
+
+        testConnection.addObserver(connectionStateTester);
+        testConnection.openConnection();
+        testConnection.handleInput(inputPacket);
+
+        connectionStateTester.testObserverIsInState(ConnectionState.CONNECTED);
+    }
+
+    @Test
+    public void containsAddress_GivenSocketAddressOfDatagramPacketWithSameAddressAsConnection_ShouldReturnTrue() throws Exception {
+        final DatagramPacket testPacket = new DatagramPacket(new byte[0], 0, localHostSocketAddress);
+        final VirtualConnection connection = new VirtualConnection(localHostSocketAddress, 1000, alwaysTrueInputConsumer, defaultOutputProvider);
         assertTrue(connection.containsAddress(testPacket.getSocketAddress()));
     }
 
     @Test
-    public void containsAddress_GivenCopyOfSameConnection_ReturnsTrue() {
-        VirtualConnection testConnection = new VirtualConnection(localHostSocketAddress, 1000, alwaysTrueInputHandler, defaultOutputSender);
+    public void containsAddress_GivenCopyOfSameConnection_ShouldReturnTrue() {
+        VirtualConnection testConnection = new VirtualConnection(localHostSocketAddress, 1000, alwaysTrueInputConsumer, defaultOutputProvider);
         assertTrue(testConnection.containsAddress(testConnection));
     }
 
     @Test
-    public void containsAddress1() throws Exception {
-        final VirtualConnection connection = new VirtualConnection(localHostSocketAddress, 1000, alwaysTrueInputHandler, defaultOutputSender);
+    public void containsAddress_GivenCopyOfAddressConnectIsStartedWith_ShouldReturnTrue() {
+        final VirtualConnection connection = new VirtualConnection(localHostSocketAddress, 1000, alwaysTrueInputConsumer, defaultOutputProvider);
         assertTrue(connection.containsAddress(localHostSocketAddress));
     }
 
     @Test
-    public void isEnded() throws Exception {
-        final int connectionTimeoutTime = 1;
-        VirtualConnection connection = new VirtualConnection(localHostSocketAddress, connectionTimeoutTime, alwaysTrueInputHandler, defaultOutputSender);
-        assertEquals(false, connection.isEnded());
-        connection.sendOutput();
-        Thread.sleep(connectionTimeoutTime * 2);
-        assertEquals(true, connection.isEnded());
-    }
+    public void closeConnection_ClosingConnectionPutsObserversInCorrectState_ShouldReturnTrue() {
+        final VirtualConnection testConnection = new VirtualConnection(localHostSocketAddress, 1000, alwaysTrueInputConsumer, defaultOutputProvider);
+        final ConnectionStateTester connectionStateTester = new ConnectionStateTester();
 
+        testConnection.addObserver(connectionStateTester);
+        testConnection.closeConnection();
+
+        connectionStateTester.testObserverIsInState(ConnectionState.ENDED);
+    }
 }

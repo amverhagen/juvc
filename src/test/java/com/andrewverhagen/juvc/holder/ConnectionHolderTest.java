@@ -1,7 +1,7 @@
 package com.andrewverhagen.juvc.holder;
 
-import com.andrewverhagen.juvc.connection.InputHandler;
-import com.andrewverhagen.juvc.connection.OutputSender;
+import com.andrewverhagen.juvc.connection.InputConsumer;
+import com.andrewverhagen.juvc.connection.OutputProvider;
 import com.andrewverhagen.juvc.connection.VirtualConnection;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -12,8 +12,8 @@ import static org.junit.Assert.*;
 
 public class ConnectionHolderTest {
 
-    private static InputHandler inputHandler;
-    private static OutputSender outputSender;
+    private static InputConsumer inputConsumer;
+    private static OutputProvider outputProvider;
     private static VirtualConnection testConnection9001;
     private static VirtualConnection testConnection9002;
     private static ConnectionHolder testHolder;
@@ -25,8 +25,8 @@ public class ConnectionHolderTest {
         InetSocketAddress localHostPort9001 = new InetSocketAddress(9001);
         InetSocketAddress localHostPort9002 = new InetSocketAddress(9002);
 
-        testConnection9001 = new VirtualConnection(localHostPort9001, 2000, inputHandler, outputSender);
-        testConnection9002 = new VirtualConnection(localHostPort9002, 2000, inputHandler, outputSender);
+        testConnection9001 = new VirtualConnection(localHostPort9001, 2000, inputConsumer, outputProvider);
+        testConnection9002 = new VirtualConnection(localHostPort9002, 2000, inputConsumer, outputProvider);
         testHolder = new ConnectionHolder(1);
         try {
             testHolder.addConnection(testConnection9001);
@@ -38,16 +38,16 @@ public class ConnectionHolderTest {
     }
 
     private static void initHandlers() {
-        InputHandler inputHandler = new InputHandler() {
+        InputConsumer inputConsumer = new InputConsumer() {
             @Override
-            public boolean handleInput(byte[] incomingData) {
-                return true;
+            public void addInputData(byte[] inputData) {
+
             }
         };
-        OutputSender outputSender = new OutputSender() {
+        OutputProvider outputProvider = new OutputProvider() {
             @Override
-            public void sendOutput() {
-
+            public byte[] getOutputData() {
+                return new byte[0];
             }
         };
     }
