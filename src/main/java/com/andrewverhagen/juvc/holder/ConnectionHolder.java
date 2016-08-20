@@ -62,15 +62,17 @@ public class ConnectionHolder {
 
     public List<DatagramPacket> getOutputPackets() {
         this.removeClosedConnections();
-        outputPackets.clear();
-        synchronized (virtualConnections) {
-            for (VirtualConnection virtualConnection : virtualConnections) {
-                DatagramPacket outputPacket = virtualConnection.getOutputPacket();
-                if (outputPacket != null)
-                    outputPackets.add(outputPacket);
+        synchronized (outputPackets) {
+            outputPackets.clear();
+            synchronized (virtualConnections) {
+                for (VirtualConnection virtualConnection : virtualConnections) {
+                    DatagramPacket outputPacket = virtualConnection.getOutputPacket();
+                    if (outputPacket != null)
+                        outputPackets.add(outputPacket);
+                }
             }
+            return outputPackets;
         }
-        return outputPackets;
     }
 
     public void closeConnections() {

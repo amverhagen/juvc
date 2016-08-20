@@ -5,7 +5,7 @@ public enum ConnectionState {
     UNOPENED(0),
     CONNECTING(1),
     CONNECTED(2),
-    ENDED(3);
+    CLOSED(3);
 
     private final int connectionLevel;
 

@@ -19,21 +19,20 @@ class ClosedConnectionRemover implements Observer {
     @Override
     public void update(Observable o, Object arg) {
         if (o instanceof VirtualConnection) {
-            if (arg == ConnectionState.ENDED) {
+            if (arg == ConnectionState.CLOSED) {
                 synchronized (expiredConnections) {
                     expiredConnections.add((VirtualConnection) o);
+                    o.deleteObserver(this);
                 }
             }
-        }
+        } else
+            o.deleteObserver(this);
     }
 
     void removeClosedConnectionsInList(List<VirtualConnection> virtualConnectionList) {
         synchronized (expiredConnections) {
             synchronized (virtualConnectionList) {
                 virtualConnectionList.removeAll(expiredConnections);
-            }
-            for (VirtualConnection expiredConnection : expiredConnections) {
-                expiredConnection.deleteObserver(this);
             }
             expiredConnections.clear();
         }
