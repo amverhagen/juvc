@@ -1,5 +1,7 @@
 package com.andrewverhagen.juvc.connector;
 
+import com.andrewverhagen.juvc.holder.ConnectionHolder;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -8,12 +10,12 @@ class InputWorker extends Thread {
 
     private final DatagramSocket inputSocket;
     private final DatagramPacket inputPacket;
-    private final Connector connector;
+    private final ConnectionHolder connectionHolder;
 
-    InputWorker(Connector connector, DatagramSocket inputSocket) {
+    InputWorker(ConnectionHolder connectionHolder, DatagramSocket inputSocket) {
         this.inputSocket = inputSocket;
         this.inputPacket = new DatagramPacket(new byte[256], 256);
-        this.connector = connector;
+        this.connectionHolder = connectionHolder;
     }
 
     @Override
@@ -21,7 +23,7 @@ class InputWorker extends Thread {
         while (!inputSocket.isClosed()) {
             try {
                 inputSocket.receive(this.inputPacket);
-                connector.addInputToConnections(this.inputPacket);
+                connectionHolder.distributePacketToConnections(this.inputPacket);
             } catch (IOException e) {
                 inputSocket.close();
             }
