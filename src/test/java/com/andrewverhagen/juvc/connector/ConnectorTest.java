@@ -7,6 +7,7 @@ import com.andrewverhagen.juvc.holder.ConnectionHolder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
@@ -23,7 +24,7 @@ public class ConnectorTest {
     public static void initCommonObjects() {
         defaultInputConsumer = new InputConsumer() {
             @Override
-            public void addInputData(byte[] inputData) {
+            public void addDatagramPacket(DatagramPacket inputData) {
 
             }
         };

@@ -29,7 +29,7 @@ public class VirtualConnection extends Observable {
     public void handleInput(DatagramPacket inputPacket) {
         if (this.isActive() && this.containsAddress(inputPacket.getSocketAddress())) {
             this.receivedInput();
-            inputConsumer.addInputData(inputPacket.getData());
+            inputConsumer.addDatagramPacket(inputPacket);
         }
     }
 

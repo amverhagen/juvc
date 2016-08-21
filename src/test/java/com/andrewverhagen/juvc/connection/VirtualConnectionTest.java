@@ -16,8 +16,9 @@ public class VirtualConnectionTest {
 
     private static final InputConsumer FAIL_ON_INPUT_CONSUMER = new InputConsumer() {
         @Override
-        public void addInputData(byte[] inputData) {
+        public void addDatagramPacket(DatagramPacket inputData) {
             fail("Input should not have been passed to this consumer.");
+
         }
     };
 
@@ -25,7 +26,7 @@ public class VirtualConnectionTest {
     public static void initHandlers() {
         defaultInputConsumer = new InputConsumer() {
             @Override
-            public void addInputData(byte[] inputData) {
+            public void addDatagramPacket(DatagramPacket inputData) {
 
             }
         };
@@ -271,14 +272,14 @@ public class VirtualConnectionTest {
     private class DataCheckingInputConsumer implements InputConsumer {
         private byte[] addedData;
 
-        @Override
-        public void addInputData(byte[] inputData) {
-            this.addedData = inputData;
-        }
-
         public void addedDataMatchesData(byte[] dataToCheckAgainst) {
             assertNotNull(this.addedData);
             assertTrue(this.addedData == dataToCheckAgainst);
+        }
+
+        @Override
+        public void addDatagramPacket(DatagramPacket inputData) {
+            this.addedData = inputData.getData();
         }
     }
 }

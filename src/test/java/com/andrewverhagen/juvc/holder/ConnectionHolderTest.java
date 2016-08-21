@@ -1,5 +1,6 @@
 package com.andrewverhagen.juvc.holder;
 
+import com.andrewverhagen.juvc.ReceivedPacketInputConsumer;
 import com.andrewverhagen.juvc.connection.InputConsumer;
 import com.andrewverhagen.juvc.connection.OutputProvider;
 import com.andrewverhagen.juvc.connection.VirtualConnection;
@@ -14,7 +15,7 @@ public class ConnectionHolderTest {
 
     private static final InputConsumer defaultConsumer = new InputConsumer() {
         @Override
-        public void addInputData(byte[] inputData) {
+        public void addDatagramPacket(DatagramPacket inputData) {
 
         }
     };
@@ -159,7 +160,7 @@ public class ConnectionHolderTest {
     public void distributePacketToConnections_DistributePacketWithSameAddressAsConnectionInHolder_ConnectionShouldRecievePacket() {
         final ConnectionHolder testHolder = new ConnectionHolder(1);
         final InetSocketAddress testAddress = new InetSocketAddress(9001);
-        final ReceivedPacketConsumer packetConsumer = new ReceivedPacketConsumer();
+        final ReceivedPacketInputConsumer packetConsumer = new ReceivedPacketInputConsumer();
         final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, packetConsumer, defaultProvider);
         final DatagramPacket testPacket = new DatagramPacket(new byte[0], 0, testAddress);
 
@@ -172,9 +173,9 @@ public class ConnectionHolderTest {
         }
 
         testConnection.openConnection();
-        testHolder.distributePacketToConnections(testPacket);
+        testHolder.addDatagramPacket(testPacket);
 
-        assertTrue(packetConsumer.receivedData);
+        assertTrue(packetConsumer.receivedData());
     }
 
     @Test
@@ -182,7 +183,6 @@ public class ConnectionHolderTest {
         final ConnectionHolder testHolder = new ConnectionHolder(1);
         final InetSocketAddress testAddress = new InetSocketAddress(9001);
         final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, defaultConsumer, defaultProvider);
-
 
         try {
             testHolder.addConnection(testConnection);
@@ -199,13 +199,5 @@ public class ConnectionHolderTest {
         assertTrue(testHolder.getOutputPackets().size() == 0);
     }
 
-    private class ReceivedPacketConsumer implements InputConsumer {
 
-        private boolean receivedData = false;
-
-        @Override
-        public void addInputData(byte[] inputData) {
-            this.receivedData = true;
-        }
-    }
 }

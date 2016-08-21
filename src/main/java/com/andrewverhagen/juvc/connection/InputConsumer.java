@@ -1,5 +1,7 @@
 package com.andrewverhagen.juvc.connection;
 
+import java.net.DatagramPacket;
+
 public interface InputConsumer {
-    void addInputData(byte[] inputData);
+    void addDatagramPacket(DatagramPacket inputData);
 }

@@ -1,12 +1,13 @@
 package com.andrewverhagen.juvc.holder;
 
+import com.andrewverhagen.juvc.connection.InputConsumer;
 import com.andrewverhagen.juvc.connection.VirtualConnection;
 
 import java.net.DatagramPacket;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ConnectionHolder {
+public class ConnectionHolder implements InputConsumer {
 
     private final ClosedConnectionRemover closedConnectionRemover;
     private final ArrayList<VirtualConnection> virtualConnections;
@@ -49,7 +50,8 @@ public class ConnectionHolder {
         return false;
     }
 
-    public void distributePacketToConnections(DatagramPacket inputPacket) {
+    public void addDatagramPacket(DatagramPacket inputPacket) {
+        System.out.println("Distributed");
         synchronized (virtualConnections) {
             for (VirtualConnection virtualConnection : virtualConnections)
                 virtualConnection.handleInput(inputPacket);
