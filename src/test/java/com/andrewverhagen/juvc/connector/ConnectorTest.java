@@ -89,7 +89,7 @@ public class ConnectorTest {
     }
 
     @Test
-    public void startConnection_StartConnectionWhilePortIsAlreadyUsed_ShouldThrowSocketException(){
+    public void startConnection_StartConnectionWhilePortIsAlreadyUsed_ShouldThrowSocketException() {
         final InetSocketAddress testAddress = new InetSocketAddress(9000);
         final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, defaultInputConsumer, defaultOutputProvider);
         final Connector testConnector = new Connector(1, 10);
@@ -115,7 +115,7 @@ public class ConnectorTest {
     }
 
     @Test
-    public void closeConnection_CloseActiveConnection_ShouldCloseConnection() {
+    public void closeConnection_CloseActiveConnection_ShouldPutConnectionStateOfVirtualConnectionToClosed() {
         final InetSocketAddress testAddress = new InetSocketAddress(9000);
         final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, defaultInputConsumer, defaultOutputProvider);
         final Connector testConnector = new Connector(1);

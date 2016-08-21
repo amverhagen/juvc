@@ -233,6 +233,21 @@ public class VirtualConnectionTest {
     }
 
     @Test
+    public void handleInput_SendConnectionInputBeforeTimeoutHasElapsed_ConnectionShouldBeInConnectedState() throws InterruptedException {
+        final InetSocketAddress connectionAddress = new InetSocketAddress(9000);
+        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 5000, defaultInputConsumer, defaultOutputProvider);
+        final ConnectionStateTester connectionStateTester = new ConnectionStateTester();
+        testConnection.addObserver(connectionStateTester);
+
+        testConnection.openConnection();
+
+
+        Thread.sleep(100);
+        testConnection.handleInput(new DatagramPacket(new byte[0], 0, connectionAddress));
+        connectionStateTester.testObserverIsInState(ConnectionState.CONNECTED);
+    }
+
+    @Test
     public void holdingConnection_TestConnectionHoldsAddressOfDifferentConnectionWithSameAddress_ShouldReturnTrue() {
         final InetSocketAddress connectionAddress = new InetSocketAddress(9000);
         final VirtualConnection testConnectionOne = new VirtualConnection(connectionAddress, 1, defaultInputConsumer, defaultOutputProvider);

@@ -29,7 +29,7 @@ class ClosedConnectionRemover implements Observer {
             o.deleteObserver(this);
     }
 
-    void removeClosedConnectionsInList(List<VirtualConnection> virtualConnectionList) {
+    void removeClosedConnectionsInList(final List<VirtualConnection> virtualConnectionList) {
         synchronized (expiredConnections) {
             synchronized (virtualConnectionList) {
                 virtualConnectionList.removeAll(expiredConnections);

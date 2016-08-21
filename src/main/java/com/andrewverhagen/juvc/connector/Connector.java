@@ -27,7 +27,7 @@ public class Connector {
     /**
      * Creates a connector with a specified max number of connections and
      *
-     * @param maxNumberOfConnections
+     * @param maxNumberOfConnections The max number of connections this connector can service at anyone given time.
      * @param localListeningPort     A port between 0 and 65535 inclusive. Pass -1 for any random port.
      */
     public Connector(int maxNumberOfConnections, int localListeningPort) {
