@@ -41,6 +41,7 @@ public class Connector {
         this.connectionHolder.addConnection(connectionToStart);
         if (!this.isActive())
             this.startConnector();
+        connectionToStart.openConnection();
 
     }
 

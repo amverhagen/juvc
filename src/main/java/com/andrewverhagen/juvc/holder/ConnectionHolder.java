@@ -3,35 +3,31 @@ package com.andrewverhagen.juvc.holder;
 import com.andrewverhagen.juvc.connection.VirtualConnection;
 
 import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ConnectionHolder {
 
-    private final ArrayList<VirtualConnection> virtualConnections;
-    private final ArrayList<DatagramPacket> outputPackets;
-    private final int maxAmountOfConnections;
     private final ClosedConnectionRemover closedConnectionRemover;
+    private final ArrayList<VirtualConnection> virtualConnections;
+    private final int maxAmountOfConnections;
+
 
     public ConnectionHolder(int maxAmountOfConnections) {
         if (maxAmountOfConnections < 1)
             throw new IllegalArgumentException("Holder must have a max size of at least one.");
         this.maxAmountOfConnections = maxAmountOfConnections;
         this.virtualConnections = new ArrayList<>();
-        this.outputPackets = new ArrayList<>();
         this.closedConnectionRemover = new ClosedConnectionRemover();
     }
 
     public void addConnection(VirtualConnection connectionToAdd) throws HolderIsFullException, AlreadyHoldingConnectionException {
-        if (this.holdingConnection(connectionToAdd))
-            throw new AlreadyHoldingConnectionException();
-        if (this.atCapacity())
-            throw new HolderIsFullException();
         synchronized (this.virtualConnections) {
+            if (this.holdingConnection(connectionToAdd))
+                throw new AlreadyHoldingConnectionException();
+            if (this.atCapacity())
+                throw new HolderIsFullException();
             if (this.virtualConnections.add(connectionToAdd)) {
-                connectionToAdd.openConnection();
                 connectionToAdd.addObserver(closedConnectionRemover);
             }
         }
@@ -62,14 +58,12 @@ public class ConnectionHolder {
 
     public List<DatagramPacket> getOutputPackets() {
         this.removeClosedConnections();
-        synchronized (outputPackets) {
-            outputPackets.clear();
-            synchronized (virtualConnections) {
-                for (VirtualConnection virtualConnection : virtualConnections) {
-                    DatagramPacket outputPacket = virtualConnection.getOutputPacket();
-                    if (outputPacket != null)
-                        outputPackets.add(outputPacket);
-                }
+        ArrayList<DatagramPacket> outputPackets = new ArrayList<>();
+        synchronized (virtualConnections) {
+            for (VirtualConnection virtualConnection : virtualConnections) {
+                DatagramPacket outputPacket = virtualConnection.getOutputPacket();
+                if (outputPacket != null)
+                    outputPackets.add(outputPacket);
             }
             return outputPackets;
         }
@@ -84,7 +78,9 @@ public class ConnectionHolder {
     }
 
     private void removeClosedConnections() {
-        this.closedConnectionRemover.removeClosedConnectionsInList(virtualConnections);
+        synchronized (virtualConnections) {
+            this.closedConnectionRemover.removeClosedConnectionsInList(virtualConnections);
+        }
     }
 
     public class AlreadyHoldingConnectionException extends Exception {

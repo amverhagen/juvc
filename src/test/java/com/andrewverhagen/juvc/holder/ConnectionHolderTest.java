@@ -3,57 +3,30 @@ package com.andrewverhagen.juvc.holder;
 import com.andrewverhagen.juvc.connection.InputConsumer;
 import com.andrewverhagen.juvc.connection.OutputProvider;
 import com.andrewverhagen.juvc.connection.VirtualConnection;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
 
 import static org.junit.Assert.*;
 
 public class ConnectionHolderTest {
 
-    private static InputConsumer inputConsumer;
-    private static OutputProvider outputProvider;
-    private static VirtualConnection testConnection9001;
-    private static VirtualConnection testConnection9002;
-    private static ConnectionHolder testHolder;
+    private static final InputConsumer defaultConsumer = new InputConsumer() {
+        @Override
+        public void addInputData(byte[] inputData) {
 
-
-    @BeforeClass
-    public static void initSharedObjects() {
-        initHandlers();
-        InetSocketAddress localHostPort9001 = new InetSocketAddress(9001);
-        InetSocketAddress localHostPort9002 = new InetSocketAddress(9002);
-
-        testConnection9001 = new VirtualConnection(localHostPort9001, 2000, inputConsumer, outputProvider);
-        testConnection9002 = new VirtualConnection(localHostPort9002, 2000, inputConsumer, outputProvider);
-        testHolder = new ConnectionHolder(1);
-        try {
-            testHolder.addConnection(testConnection9001);
-        } catch (ConnectionHolder.HolderIsFullException e) {
-            fail("Holder is full");
-        } catch (ConnectionHolder.AlreadyHoldingConnectionException e) {
-            fail("Holder is already holding connection");
         }
-    }
-
-    private static void initHandlers() {
-        InputConsumer inputConsumer = new InputConsumer() {
-            @Override
-            public void addInputData(byte[] inputData) {
-
-            }
-        };
-        OutputProvider outputProvider = new OutputProvider() {
-            @Override
-            public byte[] getOutputData() {
-                return new byte[0];
-            }
-        };
-    }
+    };
+    private static OutputProvider defaultProvider = new OutputProvider() {
+        @Override
+        public byte[] getOutputData() {
+            return new byte[0];
+        }
+    };
 
     @Test
-    public void initialization_GiveMaxConnectionsLessThanOne_ThrowsIllegalArgException() {
+    public void ConnectionHolder_CreateConnectionHolderWithIllegalArg_ShouldThrownIllegalArgException() {
         boolean illegalArgExceptionThrown = false;
         try {
             new ConnectionHolder(0);
@@ -64,39 +37,175 @@ public class ConnectionHolderTest {
     }
 
     @Test
-    public void testThatHolderContainsConnectionReturnsTrue() {
-        assertTrue(testHolder.holdingConnection(testConnection9001));
+    public void addConnection_AddConnectionToEmptyConnectionHolder_ShouldNotThrowAnException() {
+        final ConnectionHolder testHolder = new ConnectionHolder(1);
+        final InetSocketAddress testAddress = new InetSocketAddress(9001);
+        final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, defaultConsumer, defaultProvider);
+
+        try {
+            testHolder.addConnection(testConnection);
+        } catch (ConnectionHolder.HolderIsFullException e) {
+            fail("Holder should not be full.");
+        } catch (ConnectionHolder.AlreadyHoldingConnectionException e) {
+            fail("Holder should not already be holding connection.");
+        }
     }
 
     @Test
-    public void testThatHolderIsAtCapacity() {
+    public void addConnection_AddConnectionThatHolderIsAlreadyHolding_ShouldThrowAlreadyHoldingException() {
+        final ConnectionHolder testHolder = new ConnectionHolder(2);
+        final InetSocketAddress testAddress = new InetSocketAddress(9001);
+        final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, defaultConsumer, defaultProvider);
+
+        boolean alreadyHoldingThrown = false;
+        try {
+            testHolder.addConnection(testConnection);
+            testHolder.addConnection(testConnection);
+        } catch (ConnectionHolder.HolderIsFullException e) {
+            fail("Holder should not be full.");
+        } catch (ConnectionHolder.AlreadyHoldingConnectionException e) {
+            alreadyHoldingThrown = true;
+        }
+        assertTrue(alreadyHoldingThrown);
+    }
+
+    @Test
+    public void addConnection_AddConnectionToFullHolder_ShouldThrowHolderFullException() {
+        final ConnectionHolder testHolder = new ConnectionHolder(1);
+        final InetSocketAddress testAddress = new InetSocketAddress(9001);
+        final InetSocketAddress secondAddress = new InetSocketAddress(9002);
+        final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, defaultConsumer, defaultProvider);
+        final VirtualConnection secondTestConnection = new VirtualConnection(secondAddress, 1000, defaultConsumer, defaultProvider);
+
+        boolean alreadyHoldingThrown = false;
+        try {
+            testHolder.addConnection(testConnection);
+            testHolder.addConnection(secondTestConnection);
+        } catch (ConnectionHolder.HolderIsFullException e) {
+            alreadyHoldingThrown = true;
+        } catch (ConnectionHolder.AlreadyHoldingConnectionException e) {
+            fail("Holder should not already be holding connection.");
+        }
+        assertTrue(alreadyHoldingThrown);
+    }
+
+    @Test
+    public void atCapacity_CallAtCapacityOnHolderWithMaxNumberOfConnections_ShouldReturnTrue() {
+        final ConnectionHolder testHolder = new ConnectionHolder(1);
+        final InetSocketAddress testAddress = new InetSocketAddress(9001);
+        final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, defaultConsumer, defaultProvider);
+
+        try {
+            testHolder.addConnection(testConnection);
+        } catch (ConnectionHolder.HolderIsFullException e) {
+            fail("Holder should not be full");
+        } catch (ConnectionHolder.AlreadyHoldingConnectionException e) {
+            fail("Holder should not already be holding address");
+        }
         assertTrue(testHolder.atCapacity());
     }
 
     @Test
-    public void addConnection_GiveHolderConnectionWhenFull_HolderThrowsAtCapacityException() {
-        boolean atCapacityThrown = false;
+    public void atCapacity_CallAtCapacityOnHolderThatIsNotFull_ShouldReturnFalse() {
+        final ConnectionHolder testHolder = new ConnectionHolder(2);
+        final InetSocketAddress testAddress = new InetSocketAddress(9001);
+        final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, defaultConsumer, defaultProvider);
+
         try {
-            testHolder.addConnection(testConnection9002);
+            testHolder.addConnection(testConnection);
         } catch (ConnectionHolder.HolderIsFullException e) {
-            atCapacityThrown = true;
+            fail("Holder should not be full");
         } catch (ConnectionHolder.AlreadyHoldingConnectionException e) {
-            fail("Holder is already holding connection");
+            fail("Holder should not already be holding address");
         }
-        assertTrue(atCapacityThrown);
+        assertFalse(testHolder.atCapacity());
     }
 
     @Test
-    public void addConnection_GiveHolderSameConnection_ThrowsAlreadyHoldingConnectionException() {
-        boolean exceptionThrown = false;
+    public void holdingConnection_CallHoldingConnectionWithConnectionThatHolderContains_ShouldReturnTrue() {
+        final ConnectionHolder testHolder = new ConnectionHolder(1);
+        final InetSocketAddress testAddress = new InetSocketAddress(9001);
+        final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, defaultConsumer, defaultProvider);
+
         try {
-            testHolder.addConnection(testConnection9001);
+            testHolder.addConnection(testConnection);
         } catch (ConnectionHolder.HolderIsFullException e) {
-            fail("Holder is already full");
+            fail("Holder should not be full");
         } catch (ConnectionHolder.AlreadyHoldingConnectionException e) {
-            exceptionThrown = true;
+            fail("Holder should not already be holding address");
         }
-        assertTrue(exceptionThrown);
+        assertTrue(testHolder.holdingConnection(testConnection));
     }
 
+    @Test
+    public void holdingConnection_CallHoldingConnectionWithConnectionThatHolderDoesNotContain_ShouldReturnFalse() {
+        final ConnectionHolder testHolder = new ConnectionHolder(1);
+        final InetSocketAddress testAddress = new InetSocketAddress(9001);
+        final InetSocketAddress differentAddress = new InetSocketAddress(9002);
+        final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, defaultConsumer, defaultProvider);
+        final VirtualConnection notHeldConnection = new VirtualConnection(differentAddress, 1000, defaultConsumer, defaultProvider);
+
+        try {
+            testHolder.addConnection(testConnection);
+        } catch (ConnectionHolder.HolderIsFullException e) {
+            fail("Holder should not be full");
+        } catch (ConnectionHolder.AlreadyHoldingConnectionException e) {
+            fail("Holder should not already be holding address");
+        }
+        assertFalse(testHolder.holdingConnection(notHeldConnection));
+    }
+
+    @Test
+    public void distributePacketToConnections_DistributePacketWithSameAddressAsConnectionInHolder_ConnectionShouldRecievePacket() {
+        final ConnectionHolder testHolder = new ConnectionHolder(1);
+        final InetSocketAddress testAddress = new InetSocketAddress(9001);
+        final ReceivedPacketConsumer packetConsumer = new ReceivedPacketConsumer();
+        final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, packetConsumer, defaultProvider);
+        final DatagramPacket testPacket = new DatagramPacket(new byte[0], 0, testAddress);
+
+        try {
+            testHolder.addConnection(testConnection);
+        } catch (ConnectionHolder.HolderIsFullException e) {
+            fail("Holder should not be full");
+        } catch (ConnectionHolder.AlreadyHoldingConnectionException e) {
+            fail("Holder should not already be holding address");
+        }
+
+        testConnection.openConnection();
+        testHolder.distributePacketToConnections(testPacket);
+
+        assertTrue(packetConsumer.receivedData);
+    }
+
+    @Test
+    public void getOutputPackets_GetPacketsOfClosedHolder_ShouldReturnEmptyList() {
+        final ConnectionHolder testHolder = new ConnectionHolder(1);
+        final InetSocketAddress testAddress = new InetSocketAddress(9001);
+        final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, defaultConsumer, defaultProvider);
+
+
+        try {
+            testHolder.addConnection(testConnection);
+        } catch (ConnectionHolder.HolderIsFullException e) {
+            fail("Holder should not be full");
+        } catch (ConnectionHolder.AlreadyHoldingConnectionException e) {
+            fail("Holder should not already be holding address");
+        }
+
+        testConnection.openConnection();
+        assertTrue(testHolder.getOutputPackets().size() > 0);
+
+        testHolder.closeConnections();
+        assertTrue(testHolder.getOutputPackets().size() == 0);
+    }
+
+    private class ReceivedPacketConsumer implements InputConsumer {
+
+        private boolean receivedData = false;
+
+        @Override
+        public void addInputData(byte[] inputData) {
+            this.receivedData = true;
+        }
+    }
 }

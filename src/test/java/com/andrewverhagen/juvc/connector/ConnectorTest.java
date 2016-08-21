@@ -66,7 +66,7 @@ public class ConnectorTest {
     }
 
     @Test
-    public void connector_InitWithValidParms_ShouldNotThrowException() {
+    public void connector_InitWithValidParams_ShouldNotThrowException() {
         new Connector(1, 1);
     }
 

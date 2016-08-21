@@ -4,6 +4,7 @@ import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Observable;
+import java.util.Observer;
 import java.util.concurrent.TimeUnit;
 
 public class VirtualConnection extends Observable {
@@ -59,6 +60,12 @@ public class VirtualConnection extends Observable {
         }
     }
 
+    @Override
+    public synchronized void addObserver(Observer o) {
+        super.addObserver(o);
+        o.update(this, this.connectionState);
+    }
+
     public synchronized void closeConnection() {
         this.setConnectionState(ConnectionState.CLOSED);
     }
@@ -86,7 +93,6 @@ public class VirtualConnection extends Observable {
     }
 
     private synchronized void setConnectionState(ConnectionState newConnectionState) {
-
         if (this.connectionState.canMoveToConnectionLevel(newConnectionState)) {
             this.connectionState = newConnectionState;
             this.setChanged();
