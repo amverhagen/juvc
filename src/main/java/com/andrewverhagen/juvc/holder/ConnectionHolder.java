@@ -7,7 +7,7 @@ import java.net.DatagramPacket;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ConnectionHolder implements InputConsumer {
+public class ConnectionHolder implements InputConsumer, PacketProvider {
 
     private final ClosedConnectionRemover closedConnectionRemover;
     private final ArrayList<VirtualConnection> virtualConnections;
@@ -58,7 +58,8 @@ public class ConnectionHolder implements InputConsumer {
         }
     }
 
-    public List<DatagramPacket> getOutputPackets() {
+    @Override
+    public List<DatagramPacket> getPackets() {
         this.removeClosedConnections();
         ArrayList<DatagramPacket> outputPackets = new ArrayList<>();
         synchronized (virtualConnections) {
@@ -84,6 +85,7 @@ public class ConnectionHolder implements InputConsumer {
             this.closedConnectionRemover.removeClosedConnectionsInList(virtualConnections);
         }
     }
+
 
     public class AlreadyHoldingConnectionException extends Exception {
     }

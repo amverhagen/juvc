@@ -1,6 +1,6 @@
 package com.andrewverhagen.juvc.connector;
 
-import com.andrewverhagen.juvc.holder.ConnectionHolder;
+import com.andrewverhagen.juvc.holder.PacketProvider;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -9,17 +9,17 @@ import java.net.DatagramSocket;
 class OutputWorker extends Thread {
 
     private final DatagramSocket outputSocket;
-    private final ConnectionHolder connectionHolder;
+    private final PacketProvider packetProvider;
 
-    OutputWorker(ConnectionHolder connectionHolder, DatagramSocket outputSocket) {
-        this.connectionHolder = connectionHolder;
+    OutputWorker(PacketProvider packetProvider, DatagramSocket outputSocket) {
         this.outputSocket = outputSocket;
+        this.packetProvider = packetProvider;
     }
 
     @Override
     public void run() {
         while (!outputSocket.isClosed()) {
-            for (DatagramPacket outputPacket : this.connectionHolder.getOutputPackets()) {
+            for (DatagramPacket outputPacket : this.packetProvider.getPackets()) {
                 try {
                     outputSocket.send(outputPacket);
                 } catch (IOException e) {

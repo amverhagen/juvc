@@ -193,10 +193,10 @@ public class ConnectionHolderTest {
         }
 
         testConnection.openConnection();
-        assertTrue(testHolder.getOutputPackets().size() > 0);
+        assertTrue(testHolder.getPackets().size() > 0);
 
         testHolder.closeConnections();
-        assertTrue(testHolder.getOutputPackets().size() == 0);
+        assertTrue(testHolder.getPackets().size() == 0);
     }
 
 

@@ -1,7 +1,6 @@
 package com.andrewverhagen.juvc.connector;
 
 import com.andrewverhagen.juvc.connection.InputConsumer;
-import com.andrewverhagen.juvc.holder.ConnectionHolder;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
