@@ -7,14 +7,13 @@ import java.net.DatagramPacket;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ConnectionHolder implements InputConsumer, PacketProvider {
+public class ConnectionPool implements InputConsumer, PacketProvider {
 
     private final ClosedConnectionRemover closedConnectionRemover;
     private final ArrayList<VirtualConnection> virtualConnections;
     private final int maxAmountOfConnections;
 
-
-    public ConnectionHolder(int maxAmountOfConnections) {
+    public ConnectionPool(int maxAmountOfConnections) {
         if (maxAmountOfConnections < 1)
             throw new IllegalArgumentException("Holder must have a max size of at least one.");
         this.maxAmountOfConnections = maxAmountOfConnections;
@@ -22,7 +21,8 @@ public class ConnectionHolder implements InputConsumer, PacketProvider {
         this.closedConnectionRemover = new ClosedConnectionRemover();
     }
 
-    public void addConnection(VirtualConnection connectionToAdd) throws HolderIsFullException, AlreadyHoldingConnectionException {
+    public void addConnection(VirtualConnection connectionToAdd)
+            throws HolderIsFullException, AlreadyHoldingConnectionException {
         synchronized (this.virtualConnections) {
             if (this.holdingConnection(connectionToAdd))
                 throw new AlreadyHoldingConnectionException();
@@ -85,7 +85,6 @@ public class ConnectionHolder implements InputConsumer, PacketProvider {
             this.closedConnectionRemover.removeClosedConnectionsInList(virtualConnections);
         }
     }
-
 
     public class AlreadyHoldingConnectionException extends Exception {
     }
