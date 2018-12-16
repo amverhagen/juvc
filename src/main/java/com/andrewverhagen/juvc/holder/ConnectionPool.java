@@ -1,13 +1,13 @@
 package com.andrewverhagen.juvc.holder;
 
-import com.andrewverhagen.juvc.connection.InputConsumer;
+import com.andrewverhagen.juvc.connection.DatagramPacketConsumer;
 import com.andrewverhagen.juvc.connection.VirtualConnection;
 
 import java.net.DatagramPacket;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ConnectionPool implements InputConsumer, PacketProvider {
+public class ConnectionPool implements DatagramPacketConsumer, PacketSupplier {
 
     private final ClosedConnectionRemover closedConnectionRemover;
     private final ArrayList<VirtualConnection> virtualConnections;
@@ -50,7 +50,8 @@ public class ConnectionPool implements InputConsumer, PacketProvider {
         return false;
     }
 
-    public void addDatagramPacket(DatagramPacket inputPacket) {
+    @Override
+    public void accept(DatagramPacket inputPacket) {
         System.out.println("Distributed");
         synchronized (virtualConnections) {
             for (VirtualConnection virtualConnection : virtualConnections)
@@ -59,7 +60,7 @@ public class ConnectionPool implements InputConsumer, PacketProvider {
     }
 
     @Override
-    public List<DatagramPacket> getPackets() {
+    public List<DatagramPacket> get() {
         this.removeClosedConnections();
         ArrayList<DatagramPacket> outputPackets = new ArrayList<>();
         synchronized (virtualConnections) {
