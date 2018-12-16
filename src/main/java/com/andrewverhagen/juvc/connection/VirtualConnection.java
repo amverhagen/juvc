@@ -2,7 +2,6 @@ package com.andrewverhagen.juvc.connection;
 
 import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.concurrent.TimeUnit;
@@ -28,7 +27,7 @@ public class VirtualConnection extends Observable {
     }
 
     public void handleInput(DatagramPacket inputPacket) {
-        if (this.isActive() && this.containsAddress(inputPacket.getSocketAddress())) {
+        if (this.isActive() && this.equals(inputPacket.getSocketAddress())) {
             this.receivedInput();
             packetConsumer.accept(inputPacket);
         }
@@ -40,18 +39,6 @@ public class VirtualConnection extends Observable {
             return new DatagramPacket(outputData, outputData.length, this.connectionAddress);
         }
         return null;
-    }
-
-    public boolean containsAddress(SocketAddress addressToCheck) {
-        return this.containsAddress((InetSocketAddress) addressToCheck);
-    }
-
-    public boolean containsAddress(VirtualConnection connectionToCheck) {
-        return this.containsAddress(connectionToCheck.connectionAddress);
-    }
-
-    public boolean containsAddress(InetSocketAddress addressToCheck) {
-        return AddressUtils.checkIfAddressesMatch(this.connectionAddress, addressToCheck);
     }
 
     public synchronized void openConnection() {
@@ -101,5 +88,15 @@ public class VirtualConnection extends Observable {
             this.setChanged();
             this.notifyObservers(newConnectionState);
         }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return this.connectionAddress.equals(obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return this.connectionAddress.hashCode();
     }
 }
