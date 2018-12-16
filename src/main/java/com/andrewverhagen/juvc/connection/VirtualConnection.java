@@ -15,27 +15,28 @@ public class VirtualConnection extends Observable {
     private ConnectionState connectionState;
     private InetSocketAddress connectionAddress;
 
-    private final InputConsumer inputConsumer;
-    private final OutputProvider outputProvider;
+    private final DatagramPacketConsumer packetConsumer;
+    private final OutputSupplier outputSupplier;
 
-    public VirtualConnection(InetSocketAddress connectionAddress, int timeOutTimeInMilliSeconds, InputConsumer inputConsumer, OutputProvider outputProvider) {
+    public VirtualConnection(InetSocketAddress connectionAddress, int timeOutTimeInMilliSeconds,
+            DatagramPacketConsumer packetConsumer, OutputSupplier outputProvider) {
         this.connectionAddress = connectionAddress;
         this.timeOutTimeInNanoSeconds = TimeUnit.MILLISECONDS.toNanos(timeOutTimeInMilliSeconds);
-        this.inputConsumer = inputConsumer;
-        this.outputProvider = outputProvider;
+        this.packetConsumer = packetConsumer;
+        this.outputSupplier = outputProvider;
         this.connectionState = ConnectionState.UNOPENED;
     }
 
     public void handleInput(DatagramPacket inputPacket) {
         if (this.isActive() && this.containsAddress(inputPacket.getSocketAddress())) {
             this.receivedInput();
-            inputConsumer.addDatagramPacket(inputPacket);
+            packetConsumer.accept(inputPacket);
         }
     }
 
     public synchronized DatagramPacket getOutputPacket() {
         if (this.isActive()) {
-            byte[] outputData = outputProvider.getOutputData();
+            byte[] outputData = outputSupplier.get();
             return new DatagramPacket(outputData, outputData.length, this.connectionAddress);
         }
         return null;
@@ -58,12 +59,13 @@ public class VirtualConnection extends Observable {
             this.setConnectionState(ConnectionState.CONNECTING);
             this.setLastValidInputTimeToNow();
         }
+        // throw ConnectionAlreadyOpenConnection here
     }
 
     @Override
-    public synchronized void addObserver(Observer o) {
-        super.addObserver(o);
-        o.update(this, this.connectionState);
+    public synchronized void addObserver(Observer observer) {
+        super.addObserver(observer);
+        observer.update(this, this.connectionState);
     }
 
     public synchronized void closeConnection() {
@@ -72,7 +74,7 @@ public class VirtualConnection extends Observable {
 
     private synchronized boolean isActive() {
         this.refreshConnectionState();
-        return this.connectionState != ConnectionState.UNOPENED && this.connectionState != ConnectionState.CLOSED;
+        return this.connectionState.isAnOpenState();
     }
 
     private synchronized void receivedInput() {
@@ -82,10 +84,11 @@ public class VirtualConnection extends Observable {
     }
 
     private synchronized void refreshConnectionState() {
-        if (this.connectionState == ConnectionState.UNOPENED || this.connectionState == ConnectionState.CLOSED)
-            return;
-        if ((System.nanoTime() - timeOfLastValidInput) > timeOutTimeInNanoSeconds)
-            this.setConnectionState(ConnectionState.CLOSED);
+        if (this.connectionState.isAnOpenState()) {
+            if ((System.nanoTime() - timeOfLastValidInput) > timeOutTimeInNanoSeconds)
+                this.setConnectionState(ConnectionState.CLOSED);
+        }
+        return;
     }
 
     private synchronized void setLastValidInputTimeToNow() {
