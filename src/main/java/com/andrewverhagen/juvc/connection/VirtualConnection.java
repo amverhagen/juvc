@@ -5,25 +5,33 @@ import java.net.InetSocketAddress;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public class VirtualConnection extends Observable {
 
     private long timeOfLastValidInput;
+    private final int timeOutTimeInMilliSeconds;
     private final long timeOutTimeInNanoSeconds;
 
     private ConnectionState connectionState;
     private InetSocketAddress connectionAddress;
 
-    private final DatagramPacketConsumer packetConsumer;
+    private final Consumer<DatagramPacket> packetConsumer;
     private final OutputSupplier outputSupplier;
 
     public VirtualConnection(InetSocketAddress connectionAddress, int timeOutTimeInMilliSeconds,
-            DatagramPacketConsumer packetConsumer, OutputSupplier outputProvider) {
+            Consumer<DatagramPacket> packetConsumer, OutputSupplier outputProvider) {
         this.connectionAddress = connectionAddress;
+        this.timeOutTimeInMilliSeconds = timeOutTimeInMilliSeconds;
         this.timeOutTimeInNanoSeconds = TimeUnit.MILLISECONDS.toNanos(timeOutTimeInMilliSeconds);
         this.packetConsumer = packetConsumer;
         this.outputSupplier = outputProvider;
         this.connectionState = ConnectionState.UNOPENED;
+    }
+
+    public VirtualConnection(VirtualConnection connection) {
+        this(connection.connectionAddress, connection.timeOutTimeInMilliSeconds, connection.packetConsumer,
+                connection.outputSupplier);
     }
 
     public void handleInput(DatagramPacket inputPacket) {

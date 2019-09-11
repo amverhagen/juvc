@@ -4,5 +4,5 @@ import java.net.DatagramPacket;
 import java.util.List;
 import java.util.function.Supplier;
 
-public interface PacketSupplier extends Supplier<List<DatagramPacket>> {
+public interface DatagramPacketSupplier extends Supplier<List<DatagramPacket>> {
 }

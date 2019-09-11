@@ -1,23 +1,24 @@
 package com.andrewverhagen.juvc.holder;
 
+import java.net.DatagramPacket;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+
 import com.andrewverhagen.juvc.connection.DatagramPacketConsumer;
 import com.andrewverhagen.juvc.connection.VirtualConnection;
 
-import java.net.DatagramPacket;
-import java.util.ArrayList;
-import java.util.List;
-
-public class ConnectionPool implements DatagramPacketConsumer, PacketSupplier {
+public class ConnectionPool implements DatagramPacketConsumer, DatagramPacketSupplier {
 
     private final ClosedConnectionRemover closedConnectionRemover;
-    private final ArrayList<VirtualConnection> virtualConnections;
+    private final HashSet<VirtualConnection> virtualConnections = new HashSet<>();
+    private final HashSet<ManagedVirtualConnection> connections = new HashSet<>();
     private final int maxAmountOfConnections;
 
     public ConnectionPool(int maxAmountOfConnections) {
         if (maxAmountOfConnections < 1)
-            throw new IllegalArgumentException("Holder must have a max size of at least one.");
+            throw new IllegalArgumentException("ConnectionPool must have a max size of at least 1.");
         this.maxAmountOfConnections = maxAmountOfConnections;
-        this.virtualConnections = new ArrayList<>();
         this.closedConnectionRemover = new ClosedConnectionRemover();
     }
 
@@ -43,16 +44,12 @@ public class ConnectionPool implements DatagramPacketConsumer, PacketSupplier {
     public boolean holdingConnection(VirtualConnection connectionToCheck) {
         this.removeClosedConnections();
         synchronized (virtualConnections) {
-            for (VirtualConnection virtualConnection : virtualConnections)
-                if (virtualConnection.containsAddress(connectionToCheck))
-                    return true;
+            return this.virtualConnections.contains(connectionToCheck);
         }
-        return false;
     }
 
     @Override
     public void accept(DatagramPacket inputPacket) {
-        System.out.println("Distributed");
         synchronized (virtualConnections) {
             for (VirtualConnection virtualConnection : virtualConnections)
                 virtualConnection.handleInput(inputPacket);
@@ -91,5 +88,12 @@ public class ConnectionPool implements DatagramPacketConsumer, PacketSupplier {
     }
 
     public class HolderIsFullException extends Exception {
+    }
+
+    private static class ManagedVirtualConnection extends VirtualConnection {
+
+        ManagedVirtualConnection(VirtualConnection connection) {
+            super(connection);
+        }
     }
 }

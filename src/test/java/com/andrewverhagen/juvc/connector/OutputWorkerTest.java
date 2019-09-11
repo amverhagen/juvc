@@ -1,18 +1,18 @@
 package com.andrewverhagen.juvc.connector;
 
-import com.andrewverhagen.juvc.holder.PacketProvider;
-import org.junit.Test;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import com.andrewverhagen.juvc.holder.DatagramPacketSupplier;
+
+import org.junit.Test;
 
 public class OutputWorkerTest {
 
@@ -20,9 +20,10 @@ public class OutputWorkerTest {
     public void start_MakeOutputWorkerSendPacketsToSocket_SocketShouldReceiveAPacket() throws IOException {
         final InetAddress localHost = InetAddress.getLocalHost();
         final DatagramSocket connectionSocket = new DatagramSocket();
-        final PacketProvider packetProvider = new PacketProvider() {
+
+        DatagramPacketSupplier packetProvider = new DatagramPacketSupplier() {
             @Override
-            public List<DatagramPacket> getPackets() {
+            public List<DatagramPacket> get() {
                 ArrayList<DatagramPacket> packets = new ArrayList<>();
                 DatagramPacket outputPacket = new DatagramPacket(new byte[0], 0);
                 outputPacket.setAddress(localHost);
@@ -31,6 +32,7 @@ public class OutputWorkerTest {
                 return packets;
             }
         };
+
         final OutputWorker outputWorker = new OutputWorker(packetProvider, connectionSocket);
         assertFalse(connectionSocket.isClosed());
         outputWorker.start();

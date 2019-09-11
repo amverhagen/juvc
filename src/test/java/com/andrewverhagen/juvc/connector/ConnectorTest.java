@@ -1,36 +1,38 @@
 package com.andrewverhagen.juvc.connector;
 
-import com.andrewverhagen.juvc.connection.InputConsumer;
-import com.andrewverhagen.juvc.connection.OutputProvider;
-import com.andrewverhagen.juvc.connection.VirtualConnection;
-import com.andrewverhagen.juvc.holder.ConnectionHolder;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.util.function.Consumer;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import com.andrewverhagen.juvc.connection.OutputSupplier;
+import com.andrewverhagen.juvc.connection.VirtualConnection;
+import com.andrewverhagen.juvc.holder.ConnectionPool;
+
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class ConnectorTest {
 
-    private static InputConsumer defaultInputConsumer;
-    private static OutputProvider defaultOutputProvider;
+    private static Consumer<DatagramPacket> defaultInputConsumer;
+    private static OutputSupplier defaultOutputProvider;
 
     @BeforeClass
     public static void initCommonObjects() {
-        defaultInputConsumer = new InputConsumer() {
+        defaultInputConsumer = new Consumer<DatagramPacket>() {
             @Override
-            public void addDatagramPacket(DatagramPacket inputData) {
-
+            public void accept(DatagramPacket t) {
             }
         };
-        defaultOutputProvider = new OutputProvider() {
+
+        defaultOutputProvider = new OutputSupplier() {
+
             @Override
-            public byte[] getOutputData() {
+            public byte[] get() {
                 return new byte[0];
             }
         };
@@ -74,13 +76,14 @@ public class ConnectorTest {
     @Test
     public void startConnection_PassValidConnectionToStartConnection_ShouldStartConnector() {
         final InetSocketAddress testAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, defaultInputConsumer, defaultOutputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, defaultInputConsumer,
+                defaultOutputProvider);
         final Connector testConnector = new Connector(1);
         try {
             testConnector.startConnection(testConnection);
-        } catch (ConnectionHolder.AlreadyHoldingConnectionException e) {
+        } catch (ConnectionPool.AlreadyHoldingConnectionException e) {
             fail("Connector should not already have connection.");
-        } catch (ConnectionHolder.HolderIsFullException e) {
+        } catch (ConnectionPool.HolderIsFullException e) {
             fail("Connector should not be full.");
         } catch (SocketException e) {
             fail("Connector unable to open socket.");
@@ -92,7 +95,8 @@ public class ConnectorTest {
     @Test
     public void startConnection_StartConnectionWhilePortIsAlreadyUsed_ShouldThrowSocketException() {
         final InetSocketAddress testAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, defaultInputConsumer, defaultOutputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, defaultInputConsumer,
+                defaultOutputProvider);
         final Connector testConnector = new Connector(1, 10);
         DatagramSocket testSocket;
         boolean socketExceptionThrown = false;
@@ -100,9 +104,9 @@ public class ConnectorTest {
             testSocket = new DatagramSocket(10);
             try {
                 testConnector.startConnection(testConnection);
-            } catch (ConnectionHolder.AlreadyHoldingConnectionException e) {
+            } catch (ConnectionPool.AlreadyHoldingConnectionException e) {
                 fail("Connector should not already have connection.");
-            } catch (ConnectionHolder.HolderIsFullException e) {
+            } catch (ConnectionPool.HolderIsFullException e) {
                 fail("Connector should not be full.");
             } catch (SocketException e) {
                 socketExceptionThrown = true;
@@ -118,13 +122,14 @@ public class ConnectorTest {
     @Test
     public void closeConnection_CloseActiveConnection_ShouldPutConnectionStateOfVirtualConnectionToClosed() {
         final InetSocketAddress testAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, defaultInputConsumer, defaultOutputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, defaultInputConsumer,
+                defaultOutputProvider);
         final Connector testConnector = new Connector(1);
         try {
             testConnector.startConnection(testConnection);
-        } catch (ConnectionHolder.AlreadyHoldingConnectionException e) {
+        } catch (ConnectionPool.AlreadyHoldingConnectionException e) {
             fail("Connector should not already have connection.");
-        } catch (ConnectionHolder.HolderIsFullException e) {
+        } catch (ConnectionPool.HolderIsFullException e) {
             fail("Connector should not be full.");
         } catch (SocketException e) {
             fail("Connector unable to open socket.");

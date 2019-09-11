@@ -1,19 +1,19 @@
 package com.andrewverhagen.juvc;
 
-import com.andrewverhagen.juvc.connection.InputConsumer;
-
 import java.net.DatagramPacket;
+import java.util.function.Consumer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ReceivedPacketInputConsumer implements InputConsumer {
+public class ReceivedPacketInputConsumer implements Consumer<DatagramPacket> {
 
-    private volatile boolean receivedData;
+    private AtomicBoolean receivedData = new AtomicBoolean(false);
 
-    public synchronized boolean receivedData() {
-        return this.receivedData;
+    public boolean receivedData() {
+        return this.receivedData();
     }
 
     @Override
-    public synchronized void addDatagramPacket(DatagramPacket inputData) {
-        this.receivedData = true;
+    public void accept(DatagramPacket t) {
+        this.receivedData.set(true);
     }
 }

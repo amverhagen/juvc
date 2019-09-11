@@ -1,54 +1,65 @@
 package com.andrewverhagen.juvc.connection;
 
-import com.andrewverhagen.juvc.ConnectionStateTester;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
+import java.util.function.Consumer;
 
-import static org.junit.Assert.*;
+import com.andrewverhagen.juvc.ConnectionStateTester;
+
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class VirtualConnectionTest {
 
-    private static InputConsumer defaultInputConsumer;
-    private static OutputProvider defaultOutputProvider;
+    private static Consumer<DatagramPacket> defaultInputConsumer;
+    private static OutputSupplier defaultOutputSupplier;
 
-    private static final InputConsumer FAIL_ON_INPUT_CONSUMER = new InputConsumer() {
+    private static final Consumer<DatagramPacket> FAIL_ON_INPUT_CONSUMER = new Consumer<DatagramPacket>() {
+
         @Override
-        public void addDatagramPacket(DatagramPacket inputData) {
+        public void accept(DatagramPacket t) {
             fail("Input should not have been passed to this consumer.");
-
         }
     };
 
     @BeforeClass
     public static void initHandlers() {
-        defaultInputConsumer = new InputConsumer() {
+
+        defaultInputConsumer = new Consumer<DatagramPacket>() {
             @Override
-            public void addDatagramPacket(DatagramPacket inputData) {
+            public void accept(DatagramPacket t) {
 
             }
         };
-        defaultOutputProvider = new OutputProvider() {
+
+        defaultOutputSupplier = new OutputSupplier() {
+
             @Override
-            public byte[] getOutputData() {
+            public byte[] get() {
                 return new byte[0];
             }
         };
-    }
+    };
 
     @Test
     public void handleInput_GivenInputWhileConnectionIsNotActive_ShouldNotBePassedToInputConsumer() {
         final InetSocketAddress testAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, FAIL_ON_INPUT_CONSUMER, defaultOutputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(testAddress, 1000, FAIL_ON_INPUT_CONSUMER,
+                defaultOutputSupplier);
         testConnection.handleInput(new DatagramPacket(new byte[0], 0, testAddress));
     }
 
     @Test
     public void handleInput_GivenInputWithDifferentAddress_ShouldNotBePassedToInputConsumer() {
         final InetSocketAddress connectionAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, FAIL_ON_INPUT_CONSUMER, defaultOutputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, FAIL_ON_INPUT_CONSUMER,
+                defaultOutputSupplier);
 
         testConnection.openConnection();
 
@@ -59,7 +70,8 @@ public class VirtualConnectionTest {
     @Test
     public void handleInput_HandleInputCalledOnConnectingConnection_ShouldPutConnectionInConnectedState() {
         final InetSocketAddress connectionAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, defaultInputConsumer, defaultOutputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, defaultInputConsumer,
+                defaultOutputSupplier);
         final ConnectionStateTester connectionStateTester = new ConnectionStateTester();
 
         testConnection.addObserver(connectionStateTester);
@@ -71,10 +83,11 @@ public class VirtualConnectionTest {
 
     @Test
     public void handleInput_HandleInputCalledWithData_InputConsumerShouldReceiveSameData() {
-        final byte[] dataToSend = {(byte) 0, (byte) 1, (byte) 2, (byte) 3, (byte) 4};
+        final byte[] dataToSend = { (byte) 0, (byte) 1, (byte) 2, (byte) 3, (byte) 4 };
         final InetSocketAddress connectionAddress = new InetSocketAddress(9000);
         final DataCheckingInputConsumer checkingInputConsumer = new DataCheckingInputConsumer();
-        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, checkingInputConsumer, defaultOutputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, checkingInputConsumer,
+                defaultOutputSupplier);
 
         testConnection.openConnection();
         testConnection.handleInput(new DatagramPacket(dataToSend, dataToSend.length, connectionAddress));
@@ -85,22 +98,25 @@ public class VirtualConnectionTest {
     @Test
     public void getOutputPacket_GetOutputPacketOfUnopenedConnection_ShouldReturnNull() {
         final InetSocketAddress connectionAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, defaultInputConsumer, defaultOutputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, defaultInputConsumer,
+                defaultOutputSupplier);
 
         assertNull(testConnection.getOutputPacket());
     }
 
     @Test
     public void getOutputPacket_GetOutputPacketOfActiveConnection_ShouldReturnExpectedOutputPacket() {
-        final byte[] correctOutput = {(byte) 10, (byte) 9, (byte) 8};
-        final OutputProvider outputProvider = new OutputProvider() {
+        final byte[] correctOutput = { (byte) 10, (byte) 9, (byte) 8 };
+        final OutputSupplier outputProvider = new OutputSupplier() {
+
             @Override
-            public byte[] getOutputData() {
+            public byte[] get() {
                 return correctOutput;
             }
         };
         final InetSocketAddress connectionAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, defaultInputConsumer, outputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, defaultInputConsumer,
+                outputProvider);
         testConnection.openConnection();
         DatagramPacket outputPacket = testConnection.getOutputPacket();
 
@@ -111,7 +127,8 @@ public class VirtualConnectionTest {
     @Test
     public void openConnection_OpeningAnUnopenedConnection_ShouldPutConnectionInConnectingState() {
         final InetSocketAddress testAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnection = new VirtualConnection(testAddress, 2000, defaultInputConsumer, defaultOutputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(testAddress, 2000, defaultInputConsumer,
+                defaultOutputSupplier);
         final ConnectionStateTester connectionStateTester = new ConnectionStateTester();
 
         testConnection.addObserver(connectionStateTester);
@@ -123,7 +140,8 @@ public class VirtualConnectionTest {
     @Test
     public void openConnection_OpeningAConnectingConnection_ShouldLeaveConnectionInConnectingState() {
         final InetSocketAddress testAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnection = new VirtualConnection(testAddress, 2000, defaultInputConsumer, defaultOutputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(testAddress, 2000, defaultInputConsumer,
+                defaultOutputSupplier);
         final ConnectionStateTester connectionStateTester = new ConnectionStateTester();
 
         testConnection.addObserver(connectionStateTester);
@@ -136,7 +154,8 @@ public class VirtualConnectionTest {
     @Test
     public void openConnection_OpenConnectionOnAConnectedConnection_ShouldLeaveConnectionInConnected() {
         final InetSocketAddress connectionAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, defaultInputConsumer, defaultOutputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, defaultInputConsumer,
+                defaultOutputSupplier);
         final ConnectionStateTester connectionStateTester = new ConnectionStateTester();
 
         testConnection.addObserver(connectionStateTester);
@@ -151,7 +170,8 @@ public class VirtualConnectionTest {
     @Test
     public void openConnection_OpenConnectionOnAClosedConnection_ShouldLeaveConnectionInClosed() {
         final InetSocketAddress connectionAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, defaultInputConsumer, defaultOutputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, defaultInputConsumer,
+                defaultOutputSupplier);
         final ConnectionStateTester connectionStateTester = new ConnectionStateTester();
 
         testConnection.addObserver(connectionStateTester);
@@ -165,7 +185,8 @@ public class VirtualConnectionTest {
     @Test
     public void closeConnection_CloseUnopenedConnection_ShouldPutConnectionInClosedState() {
         final InetSocketAddress connectionAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, defaultInputConsumer, defaultOutputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, defaultInputConsumer,
+                defaultOutputSupplier);
         final ConnectionStateTester connectionStateTester = new ConnectionStateTester();
         testConnection.addObserver(connectionStateTester);
 
@@ -177,7 +198,8 @@ public class VirtualConnectionTest {
     @Test
     public void closeConnection_CloseConnectingConnection_ShouldPutConnectionInClosedState() {
         final InetSocketAddress connectionAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, defaultInputConsumer, defaultOutputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, defaultInputConsumer,
+                defaultOutputSupplier);
         final ConnectionStateTester connectionStateTester = new ConnectionStateTester();
         testConnection.addObserver(connectionStateTester);
 
@@ -190,7 +212,8 @@ public class VirtualConnectionTest {
     @Test
     public void closeConnection_CloseConnectedConnection_ShouldPutConnectionInClosedState() {
         final InetSocketAddress connectionAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, defaultInputConsumer, defaultOutputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, defaultInputConsumer,
+                defaultOutputSupplier);
         final ConnectionStateTester connectionStateTester = new ConnectionStateTester();
         testConnection.addObserver(connectionStateTester);
 
@@ -204,7 +227,8 @@ public class VirtualConnectionTest {
     @Test
     public void closeConnection_CloseClosedConnection_ShouldLeaveConnectionInClosedState() {
         final InetSocketAddress connectionAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, defaultInputConsumer, defaultOutputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1000, defaultInputConsumer,
+                defaultOutputSupplier);
         final ConnectionStateTester connectionStateTester = new ConnectionStateTester();
         testConnection.addObserver(connectionStateTester);
 
@@ -218,9 +242,11 @@ public class VirtualConnectionTest {
     }
 
     @Test
-    public void handleInput_SendConnectionInputAfterTimeoutTimeHasElapsed_ShouldPutConnectionIntoClosedState() throws InterruptedException {
+    public void handleInput_SendConnectionInputAfterTimeoutTimeHasElapsed_ShouldPutConnectionIntoClosedState()
+            throws InterruptedException {
         final InetSocketAddress connectionAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1, defaultInputConsumer, defaultOutputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 1, defaultInputConsumer,
+                defaultOutputSupplier);
         final ConnectionStateTester connectionStateTester = new ConnectionStateTester();
         testConnection.addObserver(connectionStateTester);
 
@@ -234,14 +260,15 @@ public class VirtualConnectionTest {
     }
 
     @Test
-    public void handleInput_SendConnectionInputBeforeTimeoutHasElapsed_ConnectionShouldBeInConnectedState() throws InterruptedException {
+    public void handleInput_SendConnectionInputBeforeTimeoutHasElapsed_ConnectionShouldBeInConnectedState()
+            throws InterruptedException {
         final InetSocketAddress connectionAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 5000, defaultInputConsumer, defaultOutputProvider);
+        final VirtualConnection testConnection = new VirtualConnection(connectionAddress, 5000, defaultInputConsumer,
+                defaultOutputSupplier);
         final ConnectionStateTester connectionStateTester = new ConnectionStateTester();
         testConnection.addObserver(connectionStateTester);
 
         testConnection.openConnection();
-
 
         Thread.sleep(100);
         testConnection.handleInput(new DatagramPacket(new byte[0], 0, connectionAddress));
@@ -251,25 +278,27 @@ public class VirtualConnectionTest {
     @Test
     public void holdingConnection_TestConnectionHoldsAddressOfDifferentConnectionWithSameAddress_ShouldReturnTrue() {
         final InetSocketAddress connectionAddress = new InetSocketAddress(9000);
-        final VirtualConnection testConnectionOne = new VirtualConnection(connectionAddress, 1, defaultInputConsumer, defaultOutputProvider);
-        final VirtualConnection testConnectionTwo = new VirtualConnection(connectionAddress, 1, defaultInputConsumer, defaultOutputProvider);
+        final VirtualConnection testConnectionOne = new VirtualConnection(connectionAddress, 1, defaultInputConsumer,
+                defaultOutputSupplier);
+        final VirtualConnection testConnectionTwo = new VirtualConnection(connectionAddress, 1, defaultInputConsumer,
+                defaultOutputSupplier);
 
-        assertTrue(testConnectionOne.containsAddress(testConnectionTwo));
-        assertTrue(testConnectionTwo.containsAddress(testConnectionTwo));
+        assertTrue(testConnectionOne.equals(testConnectionTwo));
     }
 
     @Test
     public void holdingConnection_TestConnectionHoldsAddressOfDifferentConnectionWithDifferentAddress_ShouldReturnFalse() {
         final InetSocketAddress connectionAddress = new InetSocketAddress(9000);
         final InetSocketAddress differentAddress = new InetSocketAddress(9001);
-        final VirtualConnection testConnectionOne = new VirtualConnection(connectionAddress, 1, defaultInputConsumer, defaultOutputProvider);
-        final VirtualConnection testConnectionTwo = new VirtualConnection(differentAddress, 1, defaultInputConsumer, defaultOutputProvider);
+        final VirtualConnection testConnectionOne = new VirtualConnection(connectionAddress, 1, defaultInputConsumer,
+                defaultOutputSupplier);
+        final VirtualConnection testConnectionTwo = new VirtualConnection(differentAddress, 1, defaultInputConsumer,
+                defaultOutputSupplier);
 
-        assertFalse(testConnectionOne.containsAddress(testConnectionTwo));
-        assertFalse(testConnectionTwo.containsAddress(testConnectionOne));
+        assertFalse(testConnectionOne.equals(testConnectionTwo));
     }
 
-    private class DataCheckingInputConsumer implements InputConsumer {
+    private class DataCheckingInputConsumer implements Consumer<DatagramPacket> {
         private byte[] addedData;
 
         public void addedDataMatchesData(byte[] dataToCheckAgainst) {
@@ -278,7 +307,7 @@ public class VirtualConnectionTest {
         }
 
         @Override
-        public void addDatagramPacket(DatagramPacket inputData) {
+        public void accept(DatagramPacket inputData) {
             this.addedData = inputData.getData();
         }
     }

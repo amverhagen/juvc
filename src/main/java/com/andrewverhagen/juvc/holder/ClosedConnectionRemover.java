@@ -1,12 +1,12 @@
 package com.andrewverhagen.juvc.holder;
 
-import com.andrewverhagen.juvc.connection.ConnectionState;
-import com.andrewverhagen.juvc.connection.VirtualConnection;
-
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import java.util.Observable;
 import java.util.Observer;
+
+import com.andrewverhagen.juvc.connection.ConnectionState;
+import com.andrewverhagen.juvc.connection.VirtualConnection;
 
 class ClosedConnectionRemover implements Observer {
 
@@ -29,7 +29,7 @@ class ClosedConnectionRemover implements Observer {
             o.deleteObserver(this);
     }
 
-    void removeClosedConnectionsInList(final List<VirtualConnection> virtualConnectionList) {
+    void removeClosedConnectionsInList(final Collection<VirtualConnection> virtualConnectionList) {
         synchronized (expiredConnections) {
             virtualConnectionList.removeAll(expiredConnections);
             expiredConnections.clear();
